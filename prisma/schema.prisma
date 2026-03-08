@@ -1,0 +1,426 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum BirdSex {
+  MALE
+  FEMALE
+  UNKNOWN
+}
+
+enum BirdStatus {
+  ACTIVE
+  DECEASED
+  SOLD
+  ARCHIVED
+}
+
+enum ReproductiveStatus {
+  IDLE
+  PAIRING
+  NESTING
+  RAISING
+}
+
+enum GeneticConfidence {
+  INFORMED
+  PROBABLE
+  CONFIRMED
+}
+
+enum BirdOrigin {
+  OWN_BREEDER
+  EXTERNAL_BREEDER
+  IMPORTED
+}
+
+enum MutationCategory {
+  VISIBLE
+  CARRIER
+  PROBABLE
+  CONFIRMED
+}
+
+enum AchievementCategory {
+  TOURNAMENT
+  FEATURED
+  BREEDING
+  GENETIC
+}
+
+enum PairingStatus {
+  ACTIVE
+  PAUSED
+  CLOSED
+}
+
+enum NestStatus {
+  ACTIVE
+  CLOSED
+}
+
+enum OffspringStatus {
+  REGISTERED
+  RINGED
+  CONVERTED_TO_BIRD
+}
+
+enum RingUsageStatus {
+  USED
+  LINKED
+}
+
+enum BreederUpdateType {
+  BIRD_CREATED
+  BIRD_UPDATED
+  PAIRING_CREATED
+  NEST_UPDATED
+  OFFSPRING_REGISTERED
+  RING_USED
+  PUBLIC_LINK_CREATED
+}
+
+enum NotificationType {
+  STOCK_ALERT
+  GENEALOGY_WARNING
+  SYSTEM
+}
+
+enum NotificationStatus {
+  UNREAD
+  READ
+}
+
+enum GenealogyLineage {
+  PATERNAL
+  MATERNAL
+  MIXED
+}
+
+enum MediaType {
+  PHOTO
+  VIDEO
+}
+
+model User {
+  id               String            @id @default(cuid())
+  email            String            @unique
+  passwordHash     String?           @map("password_hash")
+  fullName         String?           @map("full_name")
+  role             String            @default("BREEDER")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+  breederProfile   BreederProfile?
+  birds            Bird[]            @relation("BreederBirds")
+  pairings         Pairing[]
+  nests            Nest[]
+  offspring        Offspring[]
+  ringBatches      RingBatch[]
+  ringUsages       RingUsage[]       @relation("BreederRingUsages")
+  linkedRingUsages RingUsage[]       @relation("LinkedByRingUsage")
+  publicLinks      PublicShareLink[] @relation("CreatorPublicLinks")
+  breederUpdates   BreederUpdate[]
+  notifications    Notification[]
+
+  @@map("users")
+}
+
+model BreederProfile {
+  id            String   @id @default(cuid())
+  userId        String   @unique @map("user_id")
+  aviaryName    String   @map("aviary_name")
+  city          String?
+  state         String?
+  country       String?  @default("BR")
+  startedAt     DateTime? @map("started_at")
+  workedSpecies String[] @default([]) @map("worked_species")
+  avatarUrl     String?  @map("avatar_url")
+  coverUrl      String?  @map("cover_url")
+  publicSlug    String?  @unique @map("public_slug")
+  bio           String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("breeder_profiles")
+}
+
+model Bird {
+  id                 String              @id @default(cuid())
+  breederId          String              @map("breeder_id")
+  name               String
+  nickname           String?
+  ringNumber         String              @map("ring_number")
+  species            String
+  sex                BirdSex
+  birthDate          DateTime?           @map("birth_date")
+  mainColor          String?             @map("main_color")
+  phenotype          String?
+  visibleMutation    String?             @map("visible_mutation")
+  carrierMutations   String[]            @default([]) @map("carrier_mutations")
+  probableMutations  String[]            @default([]) @map("probable_mutations")
+  geneticConfidence  GeneticConfidence   @default(INFORMED) @map("genetic_confidence")
+  fatherId           String?             @map("father_id")
+  motherId           String?             @map("mother_id")
+  origin             BirdOrigin          @default(OWN_BREEDER)
+  originBreeder      String?             @map("origin_breeder")
+  reproductiveStatus ReproductiveStatus  @default(IDLE) @map("reproductive_status")
+  isPublic           Boolean             @default(false) @map("is_public")
+  isFeatured         Boolean             @default(false) @map("is_featured")
+  notes              String?
+  status             BirdStatus          @default(ACTIVE)
+  seasonTag          String?             @map("season_tag")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+  breeder            User                @relation("BreederBirds", fields: [breederId], references: [id], onDelete: Cascade)
+  father             Bird?               @relation("BirdFather", fields: [fatherId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  mother             Bird?               @relation("BirdMother", fields: [motherId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  fatheredChildren   Bird[]              @relation("BirdFather")
+  motheredChildren   Bird[]              @relation("BirdMother")
+  media              BirdMedia[]
+  genealogyNodes     BirdGenealogy[]     @relation("GenealogyBird")
+  genealogyAncestors BirdGenealogy[]     @relation("GenealogyAncestor")
+  mutations          BirdMutation[]
+  achievements       BirdAchievement[]
+  pairingsAsMale     Pairing[]           @relation("PairingMale")
+  pairingsAsFemale   Pairing[]           @relation("PairingFemale")
+  offspringLink      Offspring[]         @relation("OffspringBird")
+  ringUsages         RingUsage[]         @relation("RingUsageBird")
+  publicShareLinks   PublicShareLink[]
+
+  @@unique([breederId, ringNumber])
+  @@index([breederId, species])
+  @@index([breederId, sex])
+  @@index([breederId, reproductiveStatus])
+  @@index([fatherId])
+  @@index([motherId])
+  @@map("birds")
+}
+
+model BirdMedia {
+  id           String    @id @default(cuid())
+  birdId       String    @map("bird_id")
+  mediaType    MediaType @map("media_type")
+  url          String
+  thumbnailUrl String?   @map("thumbnail_url")
+  sortOrder    Int       @default(0) @map("sort_order")
+  isPrimary    Boolean   @default(false) @map("is_primary")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  bird         Bird      @relation(fields: [birdId], references: [id], onDelete: Cascade)
+
+  @@index([birdId])
+  @@map("bird_media")
+}
+
+model BirdGenealogy {
+  id                 String            @id @default(cuid())
+  birdId             String            @map("bird_id")
+  ancestorId         String            @map("ancestor_id")
+  depth              Int
+  lineage            GenealogyLineage  @default(MIXED)
+  isRepeatedAncestor Boolean           @default(false) @map("is_repeated_ancestor")
+  confidence         GeneticConfidence @default(INFORMED)
+  createdAt          DateTime          @default(now()) @map("created_at")
+  bird               Bird              @relation("GenealogyBird", fields: [birdId], references: [id], onDelete: Cascade)
+  ancestor           Bird              @relation("GenealogyAncestor", fields: [ancestorId], references: [id], onDelete: Cascade)
+
+  @@unique([birdId, ancestorId, depth])
+  @@index([ancestorId])
+  @@map("bird_genealogy")
+}
+
+model BirdMutation {
+  id         String            @id @default(cuid())
+  birdId     String            @map("bird_id")
+  mutation   String
+  category   MutationCategory
+  confidence GeneticConfidence @default(INFORMED)
+  notes      String?
+  createdAt  DateTime          @default(now()) @map("created_at")
+  bird       Bird              @relation(fields: [birdId], references: [id], onDelete: Cascade)
+
+  @@index([birdId, category])
+  @@map("bird_mutations")
+}
+
+model BirdAchievement {
+  id          String              @id @default(cuid())
+  birdId      String              @map("bird_id")
+  category    AchievementCategory
+  title       String
+  description String?
+  awardedAt   DateTime?           @map("awarded_at")
+  metadata    Json?
+  createdAt   DateTime            @default(now()) @map("created_at")
+  bird        Bird                @relation(fields: [birdId], references: [id], onDelete: Cascade)
+
+  @@index([birdId, category])
+  @@map("bird_achievements")
+}
+
+model Pairing {
+  id           String        @id @default(cuid())
+  breederId    String        @map("breeder_id")
+  maleBirdId   String        @map("male_bird_id")
+  femaleBirdId String        @map("female_bird_id")
+  status       PairingStatus @default(ACTIVE)
+  startedAt    DateTime      @default(now()) @map("started_at")
+  endedAt      DateTime?     @map("ended_at")
+  notes        String?
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  breeder      User          @relation(fields: [breederId], references: [id], onDelete: Cascade)
+  male         Bird          @relation("PairingMale", fields: [maleBirdId], references: [id], onDelete: Restrict)
+  female       Bird          @relation("PairingFemale", fields: [femaleBirdId], references: [id], onDelete: Restrict)
+  nests        Nest[]
+  offspring    Offspring[]
+
+  @@index([breederId, status])
+  @@map("pairings")
+}
+
+model Nest {
+  id              String     @id @default(cuid())
+  breederId       String     @map("breeder_id")
+  pairingId       String     @map("pairing_id")
+  code            String
+  status          NestStatus @default(ACTIVE)
+  eggsCount       Int        @default(0) @map("eggs_count")
+  hatchedCount    Int        @default(0) @map("hatched_count")
+  startedAt       DateTime   @default(now()) @map("started_at")
+  expectedHatchAt DateTime?  @map("expected_hatch_at")
+  closedAt        DateTime?  @map("closed_at")
+  notes           String?
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+  breeder         User       @relation(fields: [breederId], references: [id], onDelete: Cascade)
+  pairing         Pairing    @relation(fields: [pairingId], references: [id], onDelete: Restrict)
+  offspring       Offspring[]
+
+  @@index([breederId, status])
+  @@map("nests")
+}
+
+model Offspring {
+  id            String          @id @default(cuid())
+  breederId     String          @map("breeder_id")
+  pairingId     String?         @map("pairing_id")
+  nestId        String?         @map("nest_id")
+  birdId        String?         @map("bird_id")
+  temporaryName String?         @map("temporary_name")
+  ringNumber    String?         @map("ring_number")
+  sex           BirdSex?
+  hatchDate     DateTime?       @map("hatch_date")
+  status        OffspringStatus @default(REGISTERED)
+  notes         String?
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+  breeder       User            @relation(fields: [breederId], references: [id], onDelete: Cascade)
+  pairing       Pairing?        @relation(fields: [pairingId], references: [id], onDelete: SetNull)
+  nest          Nest?           @relation(fields: [nestId], references: [id], onDelete: SetNull)
+  bird          Bird?           @relation("OffspringBird", fields: [birdId], references: [id], onDelete: SetNull)
+  ringUsage     RingUsage[]
+
+  @@index([breederId, hatchDate])
+  @@map("offspring")
+}
+
+model RingBatch {
+  id             String      @id @default(cuid())
+  breederId      String      @map("breeder_id")
+  season         String
+  lotCode        String      @map("lot_code")
+  startNumber    String      @map("start_number")
+  endNumber      String      @map("end_number")
+  quantity       Int
+  usedCount      Int         @default(0) @map("used_count")
+  alertThreshold Int         @default(10) @map("alert_threshold")
+  purchasedAt    DateTime?   @map("purchased_at")
+  isActive       Boolean     @default(true) @map("is_active")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+  breeder        User        @relation(fields: [breederId], references: [id], onDelete: Cascade)
+  usages         RingUsage[]
+
+  @@index([breederId, season])
+  @@map("ring_batches")
+}
+
+model RingUsage {
+  id             String          @id @default(cuid())
+  breederId      String          @map("breeder_id")
+  batchId        String          @map("batch_id")
+  birdId         String?         @map("bird_id")
+  offspringId    String?         @map("offspring_id")
+  ringNumber     String          @map("ring_number")
+  status         RingUsageStatus @default(USED)
+  usedAt         DateTime        @default(now()) @map("used_at")
+  notes          String?
+  linkedByUserId String?         @map("linked_by_user_id")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+  breeder        User            @relation("BreederRingUsages", fields: [breederId], references: [id], onDelete: Cascade)
+  batch          RingBatch       @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  bird           Bird?           @relation("RingUsageBird", fields: [birdId], references: [id], onDelete: SetNull)
+  offspring      Offspring?      @relation(fields: [offspringId], references: [id], onDelete: SetNull)
+  linkedByUser   User?           @relation("LinkedByRingUsage", fields: [linkedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([breederId, ringNumber])
+  @@index([batchId, status])
+  @@map("ring_usage")
+}
+
+model PublicShareLink {
+  id              String    @id @default(cuid())
+  birdId          String    @map("bird_id")
+  slug            String    @unique
+  isActive        Boolean   @default(true) @map("is_active")
+  expiresAt       DateTime? @map("expires_at")
+  allowedSections String[]  @default([]) @map("allowed_sections")
+  viewCount       Int       @default(0) @map("view_count")
+  lastVisitedAt   DateTime? @map("last_visited_at")
+  createdByUserId String?   @map("created_by_user_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  bird            Bird      @relation(fields: [birdId], references: [id], onDelete: Cascade)
+  createdByUser   User?     @relation("CreatorPublicLinks", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([birdId, isActive])
+  @@map("public_share_links")
+}
+
+model BreederUpdate {
+  id         String            @id @default(cuid())
+  breederId  String            @map("breeder_id")
+  type       BreederUpdateType
+  entityType String            @map("entity_type")
+  entityId   String?           @map("entity_id")
+  payload    Json?
+  createdAt  DateTime          @default(now()) @map("created_at")
+  breeder    User              @relation(fields: [breederId], references: [id], onDelete: Cascade)
+
+  @@index([breederId, createdAt])
+  @@map("breeder_updates")
+}
+
+model Notification {
+  id        String             @id @default(cuid())
+  userId    String             @map("user_id")
+  type      NotificationType
+  status    NotificationStatus @default(UNREAD)
+  title     String
+  message   String
+  payload   Json?
+  readAt    DateTime?          @map("read_at")
+  createdAt DateTime           @default(now()) @map("created_at")
+  updatedAt DateTime           @updatedAt @map("updated_at")
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@map("notifications")
+}

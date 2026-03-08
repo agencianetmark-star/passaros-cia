@@ -1,0 +1,31 @@
+@import "../styles/tokens.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  @apply border-border;
+}
+
+html,
+body {
+  @apply bg-background text-foreground;
+}
+
+body {
+  min-height: 100vh;
+  background-image:
+    radial-gradient(circle at 10% 0%, rgba(205, 162, 81, 0.14), transparent 30%),
+    radial-gradient(circle at 90% 8%, rgba(43, 88, 168, 0.12), transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+a {
+  @apply text-primary;
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(8px);
+}

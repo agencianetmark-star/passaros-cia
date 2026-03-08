@@ -1,0 +1,20 @@
+:root {
+  --font-sans: "Manrope";
+  --background: 210 40% 98%;
+  --foreground: 215 27% 17%;
+  --card: 0 0% 100%;
+  --card-foreground: 215 27% 17%;
+  --border: 214 32% 91%;
+  --muted: 210 35% 96%;
+  --muted-foreground: 215 16% 46%;
+  --primary: 214 67% 37%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 42 42% 90%;
+  --secondary-foreground: 36 37% 26%;
+  --accent: 45 90% 57%;
+  --success: 142 76% 36%;
+  --warning: 28 96% 53%;
+  --radius-lg: 1rem;
+  --radius-md: 0.75rem;
+  --radius-sm: 0.5rem;
+}
