@@ -18,6 +18,7 @@ SaaS web mobile-first para criadores de passaros, com foco em:
 - Banco: PostgreSQL
 - ORM: Prisma
 - Auth: camada de sessao preparada (`lib/auth/session.ts`)
+- Supabase: clientes browser/server/admin + middleware de sessao
 - Storage: preparado para URLs de midia e futuro provider S3/R2/Cloudinary
 
 ## Estrutura de pastas
@@ -120,3 +121,7 @@ Schema Prisma completo em [`prisma/schema.prisma`](./prisma/schema.prisma) com o
 - camada de servicos centralizada em `lib/services`
 - mapeamento de view model separado em `lib/mappers`
 - design system reaproveitavel para web + React Native via adaptacao de componentes
+
+## Operacao de producao
+
+- runbook Supabase + dominio: [`docs/supabase-domain.md`](./docs/supabase-domain.md)
