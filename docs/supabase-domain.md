@@ -9,8 +9,9 @@
 3. Atualize `.env`:
    - `DATABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (ou `NEXT_PUBLIC_SUPABASE_ANON_KEY`)
+   - `SUPABASE_SECRET_KEY` (ou `SUPABASE_SERVICE_ROLE_KEY`)
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `SUPABASE_SERVICE_ROLE_KEY`
 4. Rode:
    - `npm run prisma:generate`
    - `npx prisma migrate dev --name init` (local) ou `npx prisma migrate deploy` (producao)
